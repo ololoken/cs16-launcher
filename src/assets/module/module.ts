@@ -6,7 +6,6 @@ import menu_emscripten_javascript from './menu_emscripten_javascript.wasm?url'
 import filesystem_stdio from './filesystem_stdio.wasm?url'
 
 import libref_webgl2 from './libref_webgl2.wasm?url'
-import libref_soft from './libref_soft.wasm?url'
 
 import client_emscripten_javascript from './client_emscripten_javascript.wasm?url'
 import cs_emscripten_wasm32 from './cs_emscripten_javascript.wasm?url'
@@ -33,7 +32,6 @@ export const ModuleInstance = ({ ENV, reportDownloadProgress, pushMessage, canva
       'cl_dlls/menu_emscripten_wasm32.wasm',
 
       'libref_webgl2.wasm',
-      'libref_soft.wasm',
 
       'cl_dlls/client_emscripten_wasm32.wasm',
       'dlls/cs_emscripten_wasm32.so',
@@ -65,7 +63,6 @@ export const ModuleInstance = ({ ENV, reportDownloadProgress, pushMessage, canva
       if (path.endsWith('cl_dlls/menu_emscripten_wasm32.wasm')) return menu_emscripten_javascript;
 
       if (path.endsWith('libref_webgl2.wasm')) return libref_webgl2;
-      if (path.endsWith('libref_soft.wasm')) return libref_soft;
 
       if (path.endsWith('client_emscripten_wasm32.wasm')) return client_emscripten_javascript;
       if (path.endsWith('cs_emscripten_wasm32.so')) return yapb_emscripten_javascript;
