@@ -1,9 +1,10 @@
 export type ModuleInitParams = {
-  pushMessage: (msg: string) => void
   reportDownloadProgress: (percent: number) => void
   canvas: HTMLCanvasElement
   ENV: { [key: string]: string | number }
-  onExit: (code: number) => void
+  onExit: (code: number) => void,
+  print: (msg: string) => void
+  printErr: (msg: string) => void
 } & Record<string, any>
 
 export type BundleFile = { type: 'file', name: string, size: number }
@@ -12,7 +13,7 @@ type BundleReport = { type: 'report', directories: number, files: number }
 export type BundleNode = Array<BundleFile | BundleDirectory | BundleReport>
 
 type WASMType = 'i8' | 'i16' | 'i32' | 'i64' | 'float' | 'double' | '*' |
-  'i8*' | 'i16*' | 'i32*' | 'i64*' | 'float*' | 'double*';
+                'i8*' | 'i16*' | 'i32*' | 'i64*' | 'float*' | 'double*';
 
 export type SockAddr = { family: number, addr: string, port: number }
 
@@ -32,7 +33,7 @@ export type Module = {
     syncfs: (syncOrCallback: boolean | ((err: any) => void), callback?: (err: any) => void) => void
     lookupPath: (path: string) => { path: string, node: FSNode }
     writeFile: (path: string, data: Uint8Array | string, options?: { encoding?: 'binary' | 'utf8' }) => void
-    readFile: (path: string, opts?: { flags?: number, encoding?: 'binary' | 'utf8' }) => string | Uint8Array
+    readFile: <B extends 'binary' | 'utf8'>(path: string, opts?: { flags?: number, encoding?: B }) => B extends 'utf8' ? string : Uint8Array<ArrayBuffer>
     stat: (path: string) => any
     unlink: (path: string) => void
     rmdir: (path: string) => void
@@ -93,7 +94,8 @@ export type Module = {
 
   net: any;
 
-  inetNtop4: (addr: string) => number
+  inetNtop4: (addr: number) => string
+  inetPton4: (addr: string) => number
   readSockaddr: (sa: number, salen: number) => SockAddr
   writeSockaddr: (sa: number, family: number, addr: string, port: number, addrlen?: number) => number
 
@@ -110,6 +112,8 @@ export type Module = {
   HEAPU32: Uint32Array
 
   _maloc: (size: number) => number;
+
+  ccal: (exportName: string, exportReturn: 'number' | 'string', argTypes: ('number' | 'string')[], args: (number | string)[]) => number | string
 
 } & Record<string, any>
 

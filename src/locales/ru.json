@@ -8,7 +8,11 @@
       "Select zip archive": "Архив zip",
       "Toggle Fullscreen": "На весь экран",
       "Add game data": "Загрузка ресурсов игры",
-      "Try demo": "Демо-версия"
+      "Try demo": "Демо-версия",
+      "Toggle Settings": "Настройки",
+      "Link": "Пригласите своих друзей присоединиться к игре, поделившись этой ссылкой.",
+      "Volume {{vol}}": "Громкость {{vol}}",
+      "Sensitivity {{sens}}": "Чувствительность {{sens}}"
     },
     "error": {
       "Internal Server Error": "Очень серьезная ошибка",
@@ -21,6 +25,89 @@
     },
     "confirm": {
       "Are you sure?": "Удалить данные?"
+    },
+    "settings": {
+      "Select map": "Выбор карты"
+    },
+    "maps": {
+      "name": {
+        "fy_snow.bsp": "FY: Snow",
+        "fy_pool_day.bsp": "FY: Pool Day",
+        "awp_india.bsp": "AWP: India",
+        "aim_towertop.bsp": "AIM: Towertop",
+        "aim_map.bsp": "AIM: Map",
+        "de_train.bsp": "DE: Train",
+        "de_nuke.bsp": "DE: Nuke",
+        "de_inferno.bsp": "DE: Inferno",
+        "de_dust2.bsp": "DE: Dust 2",
+        "de_cbble.bsp": "DE: Cobblestone",
+        "de_aztec.bsp": "DE: Aztec"
+      },
+      "description": {
+        "fy_snow.bsp": "FY: Snow",
+        "fy_pool_day.bsp": "FY: Pool Day",
+        "awp_india.bsp": "AWP: India",
+        "aim_towertop.bsp": "AIM: Towertop",
+        "aim_map.bsp": "AIM: Map",
+        "de_train.bsp": "DE: Train",
+        "de_nuke.bsp": "DE: Nuke",
+        "de_inferno.bsp": "DE: Inferno",
+        "de_dust2.bsp": "DE: Dust 2",
+        "de_cbble.bsp": "DE: Cobblestone",
+        "de_aztec.bsp": "DE: Aztec"
+      }
+    },
+    "models": {
+      "barney": "Барни",
+      "bbbbarney": "Б-Б-Б-Барни",
+      "gina": "Джина",
+      "gman": "Г-Ман",
+      "gordon": "Гордон",
+      "helmet": "Шлем",
+      "hgrunt": "Грунт",
+      "ivan": "Иван",
+      "recon": "Разведос",
+      "robo": "Робо",
+      "scientist": "Ученый",
+      "skeleton": "Скелет",
+      "tmcm": "TMCM",
+      "zombie": "Зомби"
+    },
+    "input": {
+      "Player name": "Никнейм"
+    },
+    "buttons": {
+      "Play": "Играть",
+      "Bots": "Боты",
+      "Connect {{name}}": "Подключиться к {{name}}",
+      "Back": "Туда",
+      "Next": "Сюда",
+      "Copy": "Скопировать",
+      "Run own server": "Запустить свой сервер"
+    },
+    "snackbar": {
+      "Link Copied": "Ссылка скопирована",
+      "Hit `Esc` to open top bar menu and remove/add bots.": "Нажмите \"Esc\" чтобы открыть меню и добавить/убрать ботов."
+    },
+    "bots": {
+      "5": "4 простака",
+      "3": "3 середнячка",
+      "1": "2 профи"
+    },
+    "texts": {
+      "Server info: players {{numcl}}/{{maxcl}}, map: {{map}}, ping: {{ping}}": "Сервер: игроки {{numcl}}/{{maxcl}}, карта: {{map}}, пинг: {{ping}}",
+      "Add bots": "Добавить ботов",
+      "Public server": "Публичный сервер"
+    },
+    "tabs": {
+      "Connect To Server": "Подключиться",
+      "Create Server": "Свой сервер"
+    },
+    "srv": {
+      "Name": "Название",
+      "Map": "Карта",
+      "Players": "Игроки",
+      "Ping": "Пинг"
     },
     "Data bundle looks ok. Continue initialization...": "Все загружено. Будем запускаться...",
     "Starting wasm module...": "Запускаем модуль wasm...",

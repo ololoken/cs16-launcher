@@ -1,8 +1,6 @@
 import { Module, ModuleInitParams } from '../../types/Module';
 
 import wasm from './xash.wasm?url'
-import libmenu from './libmenu.wasm?url'
-import menu_emscripten_javascript from './menu_emscripten_javascript.wasm?url'
 import filesystem_stdio from './filesystem_stdio.wasm?url'
 
 import libref_webgl2 from './libref_webgl2.wasm?url'
@@ -16,11 +14,9 @@ import xash from './xash.js'
 
 import VirtualNetworkWrapper from './vnet';
 
-export const ModuleInstance = ({ ENV, reportDownloadProgress, pushMessage, canvas, onExit, ...rest }: ModuleInitParams) => {
+export const ModuleInstance = ({ ENV, reportDownloadProgress, canvas, onExit, ...rest }: ModuleInitParams) => {
   let module: Module;
   return xash(module = <Module>{
-    print: console.log,//msg => pushMessage?.(msg),
-    printErr: console.log,//msg => pushMessage?.(msg),
     canvas,
     preInit: [() => {
       Object.assign(module.ENV, ENV)
@@ -29,7 +25,6 @@ export const ModuleInstance = ({ ENV, reportDownloadProgress, pushMessage, canva
       'filesystem_stdio.wasm',
       '/xash/filesystem_stdio.wasm',
       '/cstrike/filesystem_stdio.wasm',
-      'cl_dlls/menu_emscripten_wasm32.wasm',
 
       'libref_webgl2.wasm',
 
@@ -60,7 +55,6 @@ export const ModuleInstance = ({ ENV, reportDownloadProgress, pushMessage, canva
     locateFile: (path: string) => {
       if (path.endsWith('xash.wasm')) return wasm;
       if (path.endsWith('filesystem_stdio.wasm')) return filesystem_stdio;
-      if (path.endsWith('cl_dlls/menu_emscripten_wasm32.wasm')) return menu_emscripten_javascript;
 
       if (path.endsWith('libref_webgl2.wasm')) return libref_webgl2;
 
@@ -74,7 +68,6 @@ export const ModuleInstance = ({ ENV, reportDownloadProgress, pushMessage, canva
     setStatus: (status: string | {}) => {
       if (!status) return;
       if (typeof status === 'string') {
-        pushMessage(status);
         const dlProgressRE = /(?<progress>\d+)\/(?<total>\d+)/ig;
         if (!dlProgressRE.test(status)) return;
         dlProgressRE.lastIndex = 0;

@@ -1,14 +1,21 @@
 import { WebSocketServer, RawData, WebSocket } from 'ws';
 
 export type Payload =
-  { init: { id: number } }
+  { 'init': { id: number } }
   | { 'pc:ice-candidate': { candidate: RTCIceCandidateInit, from: number, to: number } }
   | { 'pc:offer': { description: RTCSessionDescription, from: number, to: number } }
   | { 'pc:answer': { description: RTCSessionDescription, from: number, to: number } }
+  | { 'public': { status: boolean } }
+  | { 'list': '' }
+  | { 'sv:list': number[] }
 
 const instances = new Map<number, WebSocket>;
+const publicInstances = new Set<number>;
 
 const wss = new WebSocketServer({ port: 4990 });
+
+const sendPublicInstances = () =>
+  instances.forEach(socket => socket.send(JSON.stringify({ 'sv:list': Array.from(publicInstances) })));
 
 wss.on('connection', (ws, req) => {
 
@@ -24,6 +31,9 @@ wss.on('connection', (ws, req) => {
 
   ws.on('close', () => {
     instances.delete(id);
+    if (publicInstances.delete(id)) {
+      sendPublicInstances();
+    }
   })
 
   ws.on('error', err => {
@@ -48,6 +58,18 @@ wss.on('connection', (ws, req) => {
           const { to } = payload['pc:answer'];
           instances.get(to)?.send(JSON.stringify(payload));
         } break;
+        case 'public' in payload: {// mark instance as public
+          if (payload['public'].status) {
+            publicInstances.add(id);
+          }
+          else {
+            publicInstances.delete(id);
+          }
+          sendPublicInstances();
+        } break;
+        case 'list' in payload: {
+          sendPublicInstances();
+        } break;
         default: throw 'not_supported'
       }
     }
@@ -55,12 +77,21 @@ wss.on('connection', (ws, req) => {
       ws.close(3000, typeof e === 'string'
         ? e
         : (e instanceof Error
-          ? e.message
-          : 'unknown_error'
+            ? e.message
+            : 'unknown_error'
         ))
     }
   });
 
   ws.send(JSON.stringify({ init: { id } }));
+});
 
+process.on('uncaughtException', error  => {
+  console.log('Fatal:',  error);
+  process.exit(1);
+})
+
+process.on('unhandledRejection', (error, promise) => {
+  console.log('Promise rejection: ', promise);
+  console.log('Error: ', error );
 });

@@ -9,7 +9,7 @@ export default defineConfig({
   plugins: [commonjs({
     filter: id => id.endsWith('xash.js')
   }), react()],
-  envPrefix: 'XS',
+  envPrefix: 'CS',
   base: process.env.SITE_BASE ?? '/',
   clearScreen: false,
   server: {

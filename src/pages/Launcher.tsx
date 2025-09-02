@@ -1,76 +1,124 @@
 import {
+  Box, Button,
   Card,
-  Box,
   CardContent,
   CardHeader,
+  CircularProgress,
+  Stack, Switch, Tab,
   ToggleButton,
   Tooltip,
-  tooltipClasses,
-  Button,
-  Stack,
-  CircularProgress, Typography
+  tooltipClasses, Typography,
 } from '@mui/material';
 
+import BackgroundImage from '../assets/images/cs.jpeg';
+import BotsMenu, { botByLevel } from './BotsMenu';
+import DownloadIndicator from './DownloadIndicator';
+import GamepadIcon from '../components/icons/GamepadIcon';
+import InviteLink from './InviteLink';
+import MapConfig from './MapConfig';
+import PlayerConfig from './PlayerConfig';
+import ServersList from './ServersList';
+import VolumeAndSensitivitySliders from './VolumeAndSensitivitySliders';
+import configCfg from '../assets/module/config.cfg';
+//import cstrike from '../assets/module/cstrike.zip?url';
+const cstrike = 'https://storage.yandexcloud.net/yandex-games/cs16/cstrike.zip'
+import throwExpression from '../common/throwExpression';
+import useConfig from '../hooks/useConfig';
+import useYSDK from '../hooks/useYSDK';
+
+import { Module } from '../types/Module';
+import { ModuleInstance } from '../assets/module/module';
+import { SettingTwoTone } from '@ant-design/icons';
+import { TabContext, TabList, TabPanel } from '@mui/lab';
+import { publicServers, addServer, removeServer, flow } from '../store/reducers/game';
+import { dispatch, useSelector } from '../store';
+import { snackbar } from '../common/snackbar';
 import { useEffect, useRef, useState } from 'react';
 import { useTheme } from '@mui/material/styles';
 import { useTranslation} from 'react-i18next';
-import { Module } from '../types/Module';
-
-import DeleteIcon from '../components/icons/DeleteIcon';
-import LaunchIcon from '../components/icons/LaunchIcon';
-import TerminalIcon from '../components/icons/TerminalIcon';
-
-import ActionConfirmation from '../components/ActionConfirmation';
-import { ModuleInstance } from '../assets/module/module';
-import throwExpression from '../common/throwExpression';
 import { zipInputReader } from './dataInput';
-import cstrikeData from '../assets/module/cstrike.zip?url';
-import configCfg from '../assets/module/config.cfg';
+
+const messages: string[] = [];
+const pingCache = new Map<number, { start: number, timeout: number }>();
 
 export default () => {
   const { t } = useTranslation();
   const theme = useTheme();
 
+  const {
+    enabledBots,
+    selectedMap,
+    servers,
+    showSettings,
+    connected, connecting,
+    serverRunning, serverStarting
+  } = useSelector(state => state.game);
+
   const [instance, setInstance] = useState<Module>();
   const [readyToRun, setReadyToRun] = useState(false);
   const [mainRunning, setMainRunning] = useState(false);
   const [hasData, setHasData] = useState(false);
-  const [wzLoading, setWzLoading] = useState(false);
 
-  const [showConsole, setShowConsole] = useState(import.meta.env.DEV)
-  const [messages, setMessages] = useState<Array<string>>([]);
   const [downloadProgress, setDownloadProgress] = useState(0);
-  const [downloadTimer, setDownloadTimer] = useState(0);
-  const pushMessage = (msg: string) => setMessages(messages => {
-    if (msg === 'Running...') return messages;
-    messages.reverse().length = Math.min(messages.length, 200);
-    return [...messages.reverse(), msg]
-  });
 
-  const [openDeleteConfirmation, setOpenDeleteConfirmation] = useState(false)
+  const config = useConfig();
+  const { sdk } = useYSDK();
 
-  const [logbox, canvas] = [
-    useRef<HTMLDivElement>(null),
-    useRef<HTMLCanvasElement>(null),
-  ];
+  const canvas = useRef<HTMLCanvasElement>(null);
+
+  const [connectPayload, setConnectPayload] = useState<number>()
+  const [showTopBar, setShowTopBar] = useState(true);
+  const [isPublicServer, setIsPublicServer] = useState(false);
+  const [selectedTab, setSelectedTab] = useState(1);
 
   useEffect(() => {
-    if (!readyToRun || !instance || mainRunning) return;
-    if (import.meta.env.PROD) runInstance();
-  }, [readyToRun, instance, mainRunning]);
+    config.onChangeLocalization(sdk.environment.i18n.lang === 'ru' ? 'ru-RU' : 'en-US');
+    if (!instance || !mainRunning) return;
+    instance.executeString(`ui_language ${sdk.environment.i18n.lang === 'ru' ? 'russian' : 'english'}`)
+  }, [sdk.environment.i18n.lang, instance, mainRunning]);
+
+  useEffect(() => {
+    if (!readyToRun || !instance) return;
+    instance.callMain(['-noip6', '-windowed', '-game', 'cstrike', '-ref', 'webgl2']);
+  }, [readyToRun, instance]);
+
+  useEffect(() => {
+    setConnectPayload(Number(sdk.environment.payload))
+  }, [sdk.environment.payload]);
+
+  useEffect(() => {
+    if (!instance || !mainRunning || !connectPayload) return;
+    instance.executeString(`ui_queryserver ololoken.${connectPayload} current`);
+  }, [instance, connectPayload, mainRunning]);
 
   useEffect(() => {
     if (!instance) return;
-    const handler = () => {
+    const refreshTimeout = setTimeout(() => Object.keys(servers)
+      .forEach(identity => {
+        instance.executeString(`ui_queryserver ololoken.${identity} current`);
+        pingCache.set(Number(identity), { start: Date.now(), timeout: Number(setTimeout(() => dispatch(removeServer(identity)), 5000)) } );
+      }), 5000);
+    return () => clearTimeout(refreshTimeout)
+  }, [servers]);
+
+  useEffect(() => {
+    if (!instance) return;
+    const handle = () => {
       if (document.hidden) {
-        instance.SDL2?.audioContext.suspend();
+        instance.SDL2.audioContext.suspend();
       } else {
-        instance.SDL2?.audioContext.resume();
+        instance.SDL2.audioContext.resume();
       }
     }
-    document.addEventListener('visibilitychange', handler);
-    return () => document.removeEventListener('visibilitychange', handler);
+    document.addEventListener('visibilitychange', handle);
+    return () => document.removeEventListener('visibilitychange', handle);
   }, [instance]);
+
+  useEffect(() => {
+    const handle = () => setShowTopBar(!Boolean(document.pointerLockElement));
+    document.addEventListener('pointerlockchange', handle, false);
+    return () => document.removeEventListener('pointerlockchange', handle);
+  }, []);
 
   useEffect(() => {
     if (!hasData || !instance) return;
@@ -86,17 +134,13 @@ export default () => {
   }, [hasData, instance]);
 
   useEffect(() => {
-    logbox.current?.scrollIntoView({
-      behavior: 'smooth',
-      block: 'end'
-    });
-  }, [showConsole, messages]);
+    instance?.net.master.send(JSON.stringify({ public: { status: isPublicServer } }))
+  }, [isPublicServer]);
 
   useEffect(function critical () {//init wasm module instance
     if (!canvas.current) return;
     if ((critical as any)['lock']) return;
     (critical as any)['lock'] = true;
-    pushMessage(t(`Starting wasm module...`));
 
     ModuleInstance({
       ENV: {
@@ -106,15 +150,72 @@ export default () => {
         HOME: '/cstrike',
       },
       canvas: canvas.current,
-      pushMessage,
       reportDownloadProgress: () => {},
       onExit: (code) => {
         console.info('!+EXIT+!', code);
         // add hook or iframe callback here
+      },
+      print: msg => {
+        if (import.meta.env.DEV) console.log(msg);
+        messages.push(msg)
+      },
+      printErr: msg => {
+        if (import.meta.env.DEV) console.error(msg);
+        messages.push(msg)
       }
-    }).then(setInstance)
+    })
+      .then(instance => {
+        Object.assign(instance, {
+          callbacks: {
+            fsSyncRequired: (data: { path: string, op: 'write' | 'delete' }) => setTimeout(() => instance?.FS.syncfs(res => console.log(data, `synced`, res)), 500),
+            gameReady: async () => {
+              sdk.features.LoadingAPI.ready();
+              setMainRunning(true);
+              instance.executeString('scr_conspeed 1048576');
+              instance.executeString('con_notifytime 0');
+            },
+            serverInfo: (ip4: number, info: string) => {
+              const [, , a, b] = instance.inetNtop4(ip4).split('.', 4).map(Number);
+              const identity = (a << 0) | (b << 8);
+              const payload = info.split('\\').splice(1).reduce((r, item, idx) => {
+                const ci = Math.floor(idx/2);
+                r[ci] = [...(r[ci] ?? []), item];
+                return r;
+              }, [] as string[][]).reduce((o, [k, v]) => ({...o, [k]: v}), {})
+              dispatch(addServer({ [identity]: {...payload, ping: Date.now() - (pingCache.get(identity)?.start ?? Date.now()) }}))
+              clearTimeout(pingCache.get(identity)?.timeout);
+            }
+          },
+          executeString: instance.cwrap('Cmd_ExecuteString', 'number', ['string']),
+          getCVar: (name: string) => {
+            return instance.waitMessage(`"${name}" is`, 1000, name)
+              .then((msg: string) => {
+                const [{ groups }] = msg?.matchAll(new RegExp(`"${name}" is "(?<value>[^"]*)"`, 'gm')) ?? [{ groups: { value: '' } }];
+                 return groups?.value
+              })
+          },
+          waitMessage: (lookupMsg: string, timeout = 1000, cmd = '') => new Promise<string>((resolve, reject) => {
+            const start = Date.now();
+            const offs = messages.length-1;
+            const hTimer = setInterval(() => {
+              const msg = messages.find((msg, idx) => idx >= offs && msg.includes(lookupMsg));
+              if (!msg && Date.now() - start > timeout) {
+                clearInterval(hTimer);
+                return reject('timeout');
+              }
+              if (msg) {
+                clearInterval(hTimer);
+                return resolve(msg);
+              }
+            }, 0);
+            if (cmd) {
+              instance.executeString(cmd);
+            }
+          })
+        });
+        setInstance(instance);
+      })
       .catch((e: Error) => {
-        pushMessage(t(`error.WASM module start failed`));
         console.error(e);
       })
 
@@ -122,22 +223,20 @@ export default () => {
 
   useEffect(() => {
     if (!instance) return;
-    Object.assign(instance, {
-      callbacks: {
-       // fsSyncRequired: (data: { path: string, op: 'write' | 'delete' }) => instance?.FS.syncfs(res => { console.log(data, `synced`, res) })
-      }
-    });
-    Object.assign(window,  { instance });//debug purposes
+    if (import.meta.env.DEV)
+      Object.assign(window,  { instance });//debug purposes
     instance.print(t(`Looking up data in [{{path}}]`, { path: instance.ENV.HOME }));
 
-    instance.FS.mkdirTree(`${instance.ENV.HOME}/cstrike`);
-    instance.FS.writeFile(`${instance.ENV.HOME}/cstrike/config.cfg`, configCfg, { encoding: 'utf8' });
+    if (!instance.FS.analyzePath(`${instance.ENV.HOME}/cstrike/userconfig.cfg`).exists) {
+      instance.FS.mkdirTree(`${instance.ENV.HOME}/cstrike`);
+      instance.FS.writeFile(`${instance.ENV.HOME}/cstrike/config.cfg`, configCfg, { encoding: 'utf8' });
+    }
 
     if (instance.FS.analyzePath(`${instance.ENV.HOME}/rodir/cstrike`).exists) return setHasData(true);
 
-    fetch(cstrikeData)
+    fetch(cstrike)
       .then(async resp => {
-        const reader = resp.body?.getReader() ?? throwExpression(`failed to fetch get data.zip`);
+        const reader = resp.body?.getReader() ?? throwExpression(`failed to fetch get cstrike.zip`);
         let totalDataSize = Number(resp.headers.get('Content-Length'));
         let totalDataDownloaded = 0;
         const chunks = [];
@@ -161,77 +260,60 @@ export default () => {
 
   }, [instance])
 
-  const clearPath = (basePath: string) => {
-    if (!instance) return;
-    try {
-      Object.entries(instance.FS.lookupPath(basePath).node.contents).forEach(([path, { isFolder }]) => {
-        instance.print(`Clearing ${basePath}/${path}`)
-        isFolder
-            ? clearPath(`${basePath}/${path}`)
-            : instance.FS.unlink(`${basePath}/${path}`)
-      })
-      instance.FS.rmdir(`${basePath}`)
-    } catch (err) {
-      instance.print(`Failed to remove stored data`)
-      console.error(err)
+  useEffect(() => {
+    const handle = () => setShowTopBar(!Boolean(document.pointerLockElement));
+    document.addEventListener('pointerlockchange', handle, false);
+    return () => {
+      document.removeEventListener('pointerlockchange', handle);
     }
-  };
-
-  const removeData = () => {
-    setOpenDeleteConfirmation(true);
-  }
-
-  const runInstance = () => {
-    if (!instance || mainRunning) return;
-    try {
-      instance.callMain(['-noip6', '-windowed', '-game', 'cstrike', '-ref', 'webgl2', '-dev', '1', '-console']);
-    }
-    catch (e) {
-      console.log(e);
-    }
-    setMainRunning(true);
-    setShowConsole(false);
-  }
+  }, []);
 
   return (
     <Card
       elevation={0}
       sx={{
-        position: 'relative',
-        border: import.meta.env.PROD ? 'none' : '1px solid',
-        borderRadius: 1,
-        borderColor: theme.palette.divider,
+        background: `url(${BackgroundImage}) center center`,
+        backgroundSize: 'cover',
+        position: 'absolute',
+        width: '100%',
+        border: 'none',
       }}
     >
       <CardHeader
-        slotProps={{
-          title: { variant: 'subtitle1' }
+        title={''}
+        sx={{
+          background: theme.palette.background.default,
+          p: '8px 14px 8px 0',
+          height: 44,
+          position: 'absolute',
+          zIndex: 2000,
+          width: '100%',
+          display: showTopBar ? 'flex' : 'none',
+          '& .MuiCardHeader-action': { width: '100%' }
         }}
-        title={instance?.net?.getHostId()}
-        sx={{ p: '8px 12px', height: '44px', '& .MuiCardHeader-action': { width: '40%' } }}
+        onClick={e => e.stopPropagation()}
+        onMouseDown={e => e.stopPropagation()}
+        onMouseUp={e => e.stopPropagation()}
         action={<>
           <Stack direction={"row"} spacing={2}>
-            <Box flex={1} />
-            {!readyToRun && <CircularProgress color="warning" size="34px" />}
-            {readyToRun && hasData && !mainRunning && <Button
-                sx={{ fontSize: '1em', height: '36px' }}
-                variant="contained"
-                onClick={() => runInstance()}
-            ><LaunchIcon width="2.4em" height="2.4em" style={{ margin: '0 1em 0 0' }} /> {t('menu.Run')}</Button>}
-            {readyToRun && hasData && !mainRunning && <Button
-              sx={{ fontSize: '1em', height: '36px' }}
-              variant="contained"
-              onClick={() => removeData()}
-            ><DeleteIcon width="2.4em" height="2.4em" style={{ margin: '0 1em 0 0' }} /> {t('menu.Remove data')}</Button>}
-            <Tooltip title={t('menu.Toggle Console')} slotProps={{ popper: { sx: {
-                [`&.${tooltipClasses.popper}[data-popper-placement*="bottom"] .${tooltipClasses.tooltip}`]: { marginTop: '0px', color: '#000', fontSize: '1em' }
-              } }}}>
-                <ToggleButton value={-1} selected={showConsole} sx={{ p: '3px 6px', height: '36px' }} onClick={() => {
-                  setShowConsole(!showConsole)
-                }}>
-                  <TerminalIcon width="2.4em" height="2.4em" />
-              </ToggleButton>
-            </Tooltip>
+            {(!connectPayload && serverRunning && instance?.net?.getHostId())
+              ? <InviteLink {...{ instance }} />
+              : <Box flex={1}
+              />}
+            {serverRunning && <BotsMenu {...{instance, serverRunning}} />}
+            <VolumeAndSensitivitySliders {...{mainRunning, instance}} />
+            {readyToRun
+              ? <Tooltip title={t('menu.Toggle Settings')} slotProps={{ popper: { sx: {
+                    [`&.${tooltipClasses.popper}[data-popper-placement*="bottom"] .${tooltipClasses.tooltip}`]: { marginTop: '0px', color: '#000', fontSize: '1em' }
+                  } }}}>
+                  <ToggleButton value={-1} selected={showSettings} sx={{ p: '3px 6px', height: '36px' }} onClick={() => {
+                    //if (!serverRunning && !connected) return;
+                    dispatch(flow({ showSettings: !showSettings }))
+                  }}>
+                    <SettingTwoTone style={{ fontSize: '2.4em' }} />
+                  </ToggleButton>
+                </Tooltip>
+              : <CircularProgress color="warning" size="34px" />}
           </Stack>
         </>}
       />
@@ -240,101 +322,124 @@ export default () => {
         m: 0,
         background: ``,
         backgroundSize: 'cover',
-        height: 'calc(100vh - 46px)',
+        height: 'calc(100vh)',
         position: 'relative',
         '&:last-child': {
           paddingBottom: 0
         }}}>
         <Box sx={{
           bgcolor: 'rgba(0, 0, 0, 0.4)',
-          height: showConsole ? '100%' : 0,
+          height: showSettings && mainRunning ? '100%' : 0,
           width: '100%',
-          whiteSpace: 'pre',
-          overflowY: 'auto',
-          fontFamily: 'Fallout',
+          backdropFilter: 'blur(10px)',
+          overflow: 'auto',
           position: 'absolute',
           zIndex: 1000
         }}>
-          {messages.join('\n')}
-          <div ref={logbox}></div>
+          <Box sx={{ width: '100%', top: 44, position: 'relative', maxWidth: '90%', margin: '0 auto' }}>
+            {connectPayload
+              ? <Stack direction="column" spacing={2} alignItems="center">
+                  <Stack direction="row" spacing={2}>
+                    <PlayerConfig instance={instance} mainRunning={mainRunning} />
+                  </Stack>
+                    {servers?.[connectPayload] && <Typography>{t("texts.Server info: players {{numcl}}/{{maxcl}}, map: {{map}}, ping: {{ping}}", {
+                      numcl: servers[connectPayload].numcl,
+                      maxcl: servers[connectPayload].maxcl,
+                      map: servers[connectPayload].map,
+                      ping: servers[connectPayload].ping
+                    })}</Typography>}
+                  <Button
+                    size="large"
+                    variant="contained"
+                    startIcon={<GamepadIcon />}
+                    sx={{ minWidth: '50%' }}
+                    loading={!Boolean(servers?.[connectPayload]) || connecting}
+                    loadingIndicator={<CircularProgress />}
+                    disabled={!Boolean(servers?.[connectPayload]) || connecting}
+                    onClick={() => {
+                      dispatch(flow({ connecting: true }));
+                      dispatch(publicServers({}));
+                      instance?.executeString('host_writeconfig');
+                      instance?.preConnectToServer(connectPayload)
+                        .then(() => {
+                          instance?.executeString(`connect o.${connectPayload}`);
+                          return instance?.waitMessage('Setting up renderer', 60000)
+                        })
+                        .then(() => {
+                          dispatch(flow({ connected: true, showSettings: false }));
+                        })
+                        .finally(() => dispatch(flow({ connecting: false })));
+                    }}
+                  >{t('buttons.Connect {{name}}', { name: servers?.[connectPayload]?.host ?? '--/--' })}</Button>
+                <Button
+                  variant="text"
+                  onClick={() => setConnectPayload(undefined)}
+                >{t('buttons.Run own server')}</Button>
+                </Stack>
+              : <TabContext value={selectedTab}>
+                  <Box sx={{ borderBottom: 1, borderColor: 'divider' }}>
+                    <TabList onChange={(ignore, tab) => setSelectedTab(tab)}>
+                      <Tab label={t('tabs.Connect To Server')} value={0} />
+                      <Tab label={t('tabs.Create Server')} value={1} />
+                    </TabList>
+                  </Box>
+                  <TabPanel value={0}>
+                    <Stack direction="column" spacing={2} alignItems="center" sx={{ overflow: 'hidden' }}>
+                      <ServersList instance={instance} />
+                    </Stack>
+                  </TabPanel>
+                  <TabPanel value={1}>
+                    <Stack direction="column" spacing={2} alignItems="center" sx={{ overflow: 'hidden' }}>
+                      <Stack direction="row" spacing={2}>
+                        <MapConfig instance={instance} />
+                        <PlayerConfig instance={instance} mainRunning={mainRunning} />
+                      </Stack>
+                      <Stack direction="row" spacing={2}>
+                        <Typography>{t('texts.Public server')} <Switch
+                          checked={isPublicServer}
+                          disabled={instance?.net.master.readyState !== WebSocket.OPEN}
+                          onChange={(ignore, status) => setIsPublicServer(status)}
+                        /></Typography>
+                      </Stack>
+                      <Button
+                        size="large"
+                        variant="contained"
+                        startIcon={<GamepadIcon />}
+                        sx={{ minWidth: '50%' }}
+                        loading={serverStarting}
+                        loadingIndicator={<CircularProgress />}
+                        disabled={serverStarting}
+                        onClick={() => {
+                          dispatch(flow({ serverStarting: true }));
+                          dispatch(publicServers({}));
+                          enabledBots.flatMap(skill => botByLevel[skill].names)
+                            .forEach(name => instance?.executeString(`kick "${name}"`));
+                          instance?.executeString('host_writeconfig');
+                          instance?.executeString('deathmatch 1');
+                          instance?.executeString('maxplayers 16');
+                          instance?.executeString(`map ${selectedMap}`);
+                          instance?.waitMessage('Setting up renderer', 60000)
+                            .then(() => dispatch(flow({ showSettings: false, serverStarting: false, serverRunning: true })))
+                            .finally(() => snackbar({
+                              open: true, close: false,
+                              variant: 'alert',
+                              message: t('snackbar.Hit `Esc` to open top bar menu and remove/add bots.')
+                            }));
+                        }}
+                      >{t('buttons.Play')}</Button>
+                    </Stack>
+                  </TabPanel>
+                </TabContext>
+            }
+          </Box>
         </Box>
         <canvas id="canvas" ref={canvas} width={800} height={600} style={{
           width: '100%', height: '100%', position: 'absolute', zIndex: 100,
           top: '50%', left: '50%', transform: 'translate(-50%, -50%)',
-          maxWidth: 'calc(100vh * 800 / 600)', background: '#000'
+          background: mainRunning ? '#000' : 'transparent'
         }}></canvas>
       </CardContent>
-      {downloadProgress ? <Box sx={{ position: 'absolute', display: 'inline-flex', zIndex: 120, top: 'calc(100vh / 2 - 100px)', left: 'calc(100vw / 2 - 100px)' }}>
-        <CircularProgress variant="indeterminate" value={downloadProgress} size={200} />
-        <Box
-          sx={{
-            top: 0,
-            left: 0,
-            bottom: 0,
-            right: 0,
-            position: 'absolute',
-            display: 'flex',
-            flexDirection: 'column',
-            alignItems: 'center',
-            justifyContent: 'center',
-          }}
-        >
-          <Typography
-            variant="caption"
-            fontSize={40}
-            fontWeight={'bold'}
-            component="div"
-            sx={{ color: 'text.primary' }}
-          >{`${Math.round(downloadProgress)}%`}</Typography>
-          {downloadTimer ? <Typography
-              variant="subtitle1"
-              component="div"
-              sx={{ color: 'text.primary' }}
-          >{`${downloadTimer.toFixed(2)} c`}</Typography> : <Typography
-            variant="subtitle1"
-            component="div"
-            sx={{ color: 'text.primary' }}
-          >{Math.round(downloadProgress) === 100 ? 'Unpacking' : 'Downloading'}</Typography>}
-        </Box>
-      </Box> : ''}
-      {wzLoading ? <Box sx={{ position: 'absolute', display: 'inline-flex', zIndex: 120, top: 'calc(100vh / 2 - 100px)', left: 'calc(100vw / 2 - 100px)' }}>
-        <CircularProgress variant="indeterminate" value={50} size={200} />
-        <Box
-          sx={{
-            top: 0,
-            left: 0,
-            bottom: 0,
-            right: 0,
-            position: 'absolute',
-            display: 'flex',
-            flexDirection: 'column',
-            alignItems: 'center',
-            justifyContent: 'center',
-          }}
-        >
-          <Typography
-            variant="subtitle1"
-            component="div"
-            sx={{ color: 'text.primary' }}
-          >{`Loading...`}</Typography>
-        </Box>
-      </Box> : ''}
-      <ActionConfirmation
-        open={openDeleteConfirmation}
-        title={t('confirm.Are you sure?')}
-        handleClose={(status) => {
-          setOpenDeleteConfirmation(false);
-          if (!status || !instance) return;
-
-          clearPath(`${instance.ENV.HOME}/rodir/`);
-          instance.FS.syncfs(false, err => {
-            if (err) return instance.print(`Failed to remove data at [${instance.ENV.HOME}]`);
-            setHasData(false)
-            setShowConsole(true)
-          });
-
-        }}
-        color="error" />
+      <DownloadIndicator {...{ downloadProgress }} />
     </Card>
   )
 }

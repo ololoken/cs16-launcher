@@ -8,7 +8,11 @@
       "Select zip archive": "Select zip archive",
       "Toggle Fullscreen": "Toggle Fullscreen",
       "Add game data": "Add game data",
-      "Try demo": "Try demo"
+      "Try demo": "Try demo",
+      "Toggle Settings": "Toggle Settings",
+      "Link": "Invite your friends to join the game by sharing this link.",
+      "Volume {{vol}}": "Volume {{vol}}",
+      "Sensitivity {{sens}}": "Sensitivity {{sens}}"
     },
     "error": {
       "Internal Server Error": "Internal Server Error",
@@ -17,8 +21,91 @@
       "The page you are looking was moved, removed, renamed, or might never exist!": "The page you are looking was moved, removed, renamed, or might never exist!",
       "Page Not Found": "Page Not Found"
     },
+    "settings": {
+      "Select map": "Select map"
+    },
     "confirm": {
       "Are you sure?": "Are you sure?"
+    },
+    "maps": {
+      "name": {
+        "fy_snow.bsp": "FY: Snow",
+        "fy_pool_day.bsp": "FY: Pool Day",
+        "awp_india.bsp": "AWP: India",
+        "aim_towertop.bsp": "AIM: Towertop",
+        "aim_map.bsp": "AIM: Map",
+        "de_train.bsp": "DE: Train",
+        "de_nuke.bsp": "DE: Nuke",
+        "de_inferno.bsp": "DE: Inferno",
+        "de_dust2.bsp": "DE: Dust 2",
+        "de_cbble.bsp": "DE: Cobblestone",
+        "de_aztec.bsp": "DE: Aztec"
+      },
+      "description": {
+        "fy_snow.bsp": "FY: Snow",
+        "fy_pool_day.bsp": "FY: Pool Day",
+        "awp_india.bsp": "AWP: India",
+        "aim_towertop.bsp": "AIM: Towertop",
+        "aim_map.bsp": "AIM: Map",
+        "de_train.bsp": "DE: Train",
+        "de_nuke.bsp": "DE: Nuke",
+        "de_inferno.bsp": "DE: Inferno",
+        "de_dust2.bsp": "DE: Dust 2",
+        "de_cbble.bsp": "DE: Cobblestone",
+        "de_aztec.bsp": "DE: Aztec"
+      }
+    },
+    "models": {
+      "barney": "Barney",
+      "bbbbarney": "B-B-B-Barney",
+      "gina": "Gina",
+      "gman": "G-Man",
+      "gordon": "Gordon",
+      "helmet": "Helmet",
+      "hgrunt": "Hgrunt",
+      "ivan": "Ivan",
+      "recon": "Recon",
+      "robo": "Robo",
+      "scientist": "Scientist",
+      "skeleton": "Skeleton",
+      "tmcm": "TMCM",
+      "zombie": "Zombie"
+    },
+    "input": {
+      "Player name": "Player name"
+    },
+    "buttons": {
+      "Play": "Play",
+      "Bots": "Bots",
+      "Connect {{name}}": "Connect {{name}}",
+      "Back": "Back",
+      "Next": "Next",
+      "Copy": "Copy",
+      "Run own server": "Run own server"
+    },
+    "snackbar": {
+      "Link Copied": "Link Copied",
+      "Hit `Esc` to open top bar menu and remove/add bots.": "Hit \"Esc\" to open top bar menu and remove/add bots."
+    },
+    "bots": {
+      "5": "4 noobs",
+      "3": "3 averages",
+      "1": "2 cyborgs"
+    },
+    "texts": {
+      "Server info: players {{numcl}}/{{maxcl}}, map: {{map}}, ping: {{ping}}": "Server info: players {{numcl}}/{{maxcl}}, map: {{map}}, ping: {{ping}}",
+      "Add bots": "Add bots",
+      "Public server": "Public server"
+    },
+    "tabs": {
+      "Connect To Server": "Connect To Server",
+      "Create Server": "Create Server"
+    },
+    "srv": {
+      "Name": "Name",
+      "Map": "Map",
+      "Players": "Players",
+      "Ping": "Ping"
     }
   }
 }
