@@ -12,7 +12,7 @@ export type Payload =
 const instances = new Map<number, WebSocket>;
 const publicInstances = new Set<number>;
 
-const wss = new WebSocketServer({ port: 4990 });
+const wss = new WebSocketServer({ port: 4991 });
 
 const sendPublicInstances = () =>
   instances.forEach(socket => socket.send(JSON.stringify({ 'sv:list': Array.from(publicInstances) })));

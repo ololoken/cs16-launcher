@@ -24,9 +24,9 @@ export default ({ instance }: Props) => {
         url.searchParams.append('payload', instance?.net?.getHostId())
         return url;
       })(new URL(import.meta.env.PROD && fake
-        ? 'https://turch.in/dm/index.html'
+        ? 'https://turch.in/zcs/index.html'
         : ( import.meta.env.PROD
-            ? 'https://yandex.ru/games/app/460673'
+            ? 'https://yandex.ru/games/app/464500'
             : `${location.host}`
           )
       )));

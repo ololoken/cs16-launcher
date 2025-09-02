@@ -60,6 +60,7 @@ export default () => {
   const [hasData, setHasData] = useState(false);
 
   const [downloadProgress, setDownloadProgress] = useState(0);
+  const [unpackProgress, setUnpackProgress] = useState(0);
 
   const config = useConfig();
   const { sdk } = useYSDK();
@@ -250,7 +251,7 @@ export default () => {
         }
         return new Blob(chunks);
       })
-      .then(blob => zipInputReader(`${instance.ENV.HOME}/rodir`, instance, blob))
+      .then(blob => zipInputReader(`${instance.ENV.HOME}/rodir`, instance, blob, (total, processed) => setUnpackProgress(processed/total*100)))
       .then(setHasData)
       .catch(error => {
         instance.print(`Failed to build local data ${error.message ?? error}`);
@@ -439,7 +440,7 @@ export default () => {
           background: mainRunning ? '#000' : 'transparent'
         }}></canvas>
       </CardContent>
-      <DownloadIndicator {...{ downloadProgress }} />
+      <DownloadIndicator {...{ downloadProgress, unpackProgress }} />
     </Card>
   )
 }

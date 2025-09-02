@@ -14,7 +14,7 @@ const send_queue: Map<string,  Array<ArrayBuffer>> = new Map();
 const recv_queue: Array<{ addr: SockAddr, data: ArrayBuffer }>  = [];
 
 export default (h: Module) => {
-  const master = new WebSocket(import. meta.env.PROD ? 'https://turch.in/hl' : `//${location.hostname}:4990`);
+  const master = new WebSocket(import. meta.env.PROD ? 'https://turch.in/cs' : `//${location.hostname}:4991`);
 
 
   const connectToServer = (remoteId: number, addr: SockAddr, key: string, callback?: (err?: string) => void) => {

@@ -58,7 +58,7 @@ const getUri = (basePath: string, entryName: string, hasRoot: boolean) => {
   return [`${basePath}/${relativePath.join('/')}/${fileName}`, relativePath.join('/')];
 }
 
-export const zipInputReader = (root: string, instance: Module, file: Blob) => {
+export const zipInputReader = (root: string, instance: Module, file: Blob, processCb?: (total: number, processed: number) => void) => {
   return new ZipReader(new BlobReader(file)).getEntries({
     decodeText: value => new TextDecoder().decode(value)
   })
@@ -67,13 +67,14 @@ export const zipInputReader = (root: string, instance: Module, file: Blob) => {
       const hasRootFolder = Object.keys(filtered
         .reduce((names, { filename }) => ({ ...names, [`${filename.split('/').at(0)}`]: true }), <{[k: string]: boolean}>{}))
         .length === 1
-
+      let processed = 0;
       const uploaded = await Promise.all(filtered.map(entry => {
         const [uri, relativePath] = getUri(`${root}`, entry.filename, hasRootFolder);
-        mkdirWithParents(instance)(`${root}/${relativePath}`);
+        instance.FS.mkdirTree(`${root}/${relativePath}`);
         return entry.getData?.(new Uint8ArrayWriter).then(data => {
           instance.print(`Writing file ${uri} to virtual fs from provided zip archive`);
           instance.FS.writeFile(`${uri}`, data, { encoding: 'binary' });
+          processCb?.(filtered.length, ++processed);
         }).then(() => true)
           .catch(e => false)
       }));
