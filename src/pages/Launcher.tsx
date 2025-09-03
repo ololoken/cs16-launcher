@@ -26,19 +26,20 @@ import throwExpression from '../common/throwExpression';
 import useConfig from '../hooks/useConfig';
 import useYSDK from '../hooks/useYSDK';
 
+import { CircularBuffer } from '../common/CircularBuffer';
 import { Module } from '../types/Module';
 import { ModuleInstance } from '../assets/module/module';
 import { SettingTwoTone } from '@ant-design/icons';
 import { TabContext, TabList, TabPanel } from '@mui/lab';
-import { publicServers, addServer, removeServer, flow } from '../store/reducers/game';
 import { dispatch, useSelector } from '../store';
+import { publicServers, addServer, removeServer, flow } from '../store/reducers/game';
 import { snackbar } from '../common/snackbar';
 import { useEffect, useRef, useState } from 'react';
 import { useTheme } from '@mui/material/styles';
 import { useTranslation} from 'react-i18next';
 import { zipInputReader } from './dataInput';
 
-const messages: string[] = [];
+const messages = new CircularBuffer<string>(100);
 const pingCache = new Map<number, { start: number, timeout: number }>();
 
 export default () => {
@@ -74,9 +75,7 @@ export default () => {
 
   useEffect(() => {
     config.onChangeLocalization(sdk.environment.i18n.lang === 'ru' ? 'ru-RU' : 'en-US');
-    if (!instance || !mainRunning) return;
-    instance.executeString(`ui_language ${sdk.environment.i18n.lang === 'ru' ? 'russian' : 'english'}`)
-  }, [sdk.environment.i18n.lang, instance, mainRunning]);
+  }, [sdk.environment.i18n.lang]);
 
   useEffect(() => {
     if (!readyToRun || !instance) return;
@@ -197,9 +196,8 @@ export default () => {
           },
           waitMessage: (lookupMsg: string, timeout = 1000, cmd = '') => new Promise<string>((resolve, reject) => {
             const start = Date.now();
-            const offs = messages.length-1;
             const hTimer = setInterval(() => {
-              const msg = messages.find((msg, idx) => idx >= offs && msg.includes(lookupMsg));
+              const msg = messages.find((msg, idx) => msg.includes(lookupMsg));
               if (!msg && Date.now() - start > timeout) {
                 clearInterval(hTimer);
                 return reject('timeout');
