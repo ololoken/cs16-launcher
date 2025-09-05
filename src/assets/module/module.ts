@@ -47,6 +47,7 @@ export const ModuleInstance = ({ ENV, reportDownloadProgress, canvas, onExit, ..
         module.addRunDependency('net-not-ready')
         VirtualNetworkWrapper(module)
           .then()
+          .catch()
           .finally(() => module.removeRunDependency('net-not-ready'))
       }
     ],

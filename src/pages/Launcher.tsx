@@ -11,7 +11,6 @@ import {
 } from '@mui/material';
 
 import BackgroundImage from '../assets/images/cs.jpeg';
-import BotsMenu, { botByLevel } from './BotsMenu';
 import DownloadIndicator from './DownloadIndicator';
 import GamepadIcon from '../components/icons/GamepadIcon';
 import InviteLink from './InviteLink';
@@ -47,11 +46,11 @@ export default () => {
   const theme = useTheme();
 
   const {
-    enabledBots,
     selectedMap,
     servers,
     showSettings,
-    connected, connecting,
+    connected,
+    connecting,
     serverRunning, serverStarting
   } = useSelector(state => state.game);
 
@@ -299,14 +298,13 @@ export default () => {
               ? <InviteLink {...{ instance }} />
               : <Box flex={1}
               />}
-            {serverRunning && <BotsMenu {...{instance, serverRunning}} />}
             <VolumeAndSensitivitySliders {...{mainRunning, instance}} />
             {readyToRun
               ? <Tooltip title={t('menu.Toggle Settings')} slotProps={{ popper: { sx: {
                     [`&.${tooltipClasses.popper}[data-popper-placement*="bottom"] .${tooltipClasses.tooltip}`]: { marginTop: '0px', color: '#000', fontSize: '1em' }
                   } }}}>
                   <ToggleButton value={-1} selected={showSettings} sx={{ p: '3px 6px', height: '36px' }} onClick={() => {
-                    //if (!serverRunning && !connected) return;
+                    if (!serverRunning && !connected) return;
                     dispatch(flow({ showSettings: !showSettings }))
                   }}>
                     <SettingTwoTone style={{ fontSize: '2.4em' }} />
@@ -378,7 +376,7 @@ export default () => {
               : <TabContext value={selectedTab}>
                   <Box sx={{ borderBottom: 1, borderColor: 'divider' }}>
                     <TabList onChange={(ignore, tab) => setSelectedTab(tab)}>
-                      <Tab label={t('tabs.Connect To Server')} value={0} />
+                      <Tab label={t('tabs.Connect To Server')} value={0} disabled={instance?.net.master.readyState !== WebSocket.OPEN} />
                       <Tab label={t('tabs.Create Server')} value={1} />
                     </TabList>
                   </Box>
@@ -411,8 +409,6 @@ export default () => {
                         onClick={() => {
                           dispatch(flow({ serverStarting: true }));
                           dispatch(publicServers({}));
-                          enabledBots.flatMap(skill => botByLevel[skill].names)
-                            .forEach(name => instance?.executeString(`kick "${name}"`));
                           instance?.executeString('host_writeconfig');
                           instance?.executeString('deathmatch 1');
                           instance?.executeString('maxplayers 16');
@@ -422,7 +418,7 @@ export default () => {
                             .finally(() => snackbar({
                               open: true, close: false,
                               variant: 'alert',
-                              message: t('snackbar.Hit `Esc` to open top bar menu and remove/add bots.')
+                              message: t('snackbar.Press `Esc` to open top bar with invite link. Press `+` to manage bots.')
                             }));
                         }}
                       >{t('buttons.Play')}</Button>

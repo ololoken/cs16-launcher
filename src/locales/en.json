@@ -85,7 +85,7 @@
     },
     "snackbar": {
       "Link Copied": "Link Copied",
-      "Hit `Esc` to open top bar menu and remove/add bots.": "Hit \"Esc\" to open top bar menu and remove/add bots."
+      "Press `Esc` to open top bar with invite link. Press `+` to manage bots.": "Press `Esc` to open top bar with invite link. Press `+` to manage bots."
     },
     "bots": {
       "5": "4 noobs",

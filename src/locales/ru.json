@@ -87,7 +87,7 @@
     },
     "snackbar": {
       "Link Copied": "Ссылка скопирована",
-      "Hit `Esc` to open top bar menu and remove/add bots.": "Нажмите \"Esc\" чтобы открыть меню и добавить/убрать ботов."
+      "Press `Esc` to open top bar with invite link. Press `+` to manage bots.": "Нажмите `Esc` чтобы открыть меню с инвайт-ссылкой. `+` чтобы открыть меню управления ботами."
     },
     "bots": {
       "5": "4 простака",

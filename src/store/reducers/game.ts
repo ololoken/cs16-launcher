@@ -1,12 +1,9 @@
-import { BotSkill } from '../../pages/BotsMenu';
 import { createSlice } from '@reduxjs/toolkit';
 
 export type GameProps = {
   playerName: string
 
   selectedMap: string
-
-  enabledBots: BotSkill[]
 
   servers: Record<number, Record<string, string | number>>
 
@@ -21,8 +18,6 @@ const initialState: GameProps = {
   playerName: '',
 
   selectedMap: 'de_dust2.bsp',
-
-  enabledBots: [],
 
   servers: {},
 
@@ -40,9 +35,6 @@ const gameSlice = createSlice({
   reducers: {
     name: (state, action) => {
       state.playerName = action.payload ?? initialState.playerName
-    },
-    bots: (state, action) => {
-      state.enabledBots = action.payload ?? initialState.enabledBots;
     },
     map: (state, action) => {
       state.selectedMap = action.payload ?? initialState.selectedMap;
@@ -68,4 +60,4 @@ const gameSlice = createSlice({
 
 export default gameSlice.reducer;
 
-export const { name, bots, map, publicServers, addServer, removeServer, flow } = gameSlice.actions;
+export const { name, map, publicServers, addServer, removeServer, flow } = gameSlice.actions;

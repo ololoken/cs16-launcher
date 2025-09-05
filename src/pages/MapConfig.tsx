@@ -15,7 +15,7 @@ import { map } from '../store/reducers/game';
 import { useTranslation} from 'react-i18next';
 
 const mapImagesPrefix = '../assets/images/maps';
-const mapImages = import.meta.glob(`../assets/images/maps/*.webp`, { eager: true, as: 'url' });
+const mapImages = import.meta.glob(`../assets/images/maps/*.jpg`, { eager: true, as: 'url' });
 
 export type Props = {
   instance?: Module
@@ -46,13 +46,13 @@ export default ({ instance }: Props) => {
       <Card sx={{ borderRadius: 0, background: 'transparent' }}>
         <CardMedia
           sx={{ minHeight: 240, minWidth: 400 }}
-          image={mapImages[`${mapImagesPrefix}/${selectedMap}.webp`]}
+          image={mapImages[`${mapImagesPrefix}/${selectedMap}.jpg`]}
           title="green iguana"
         />
         <CardContent>
           <Typography gutterBottom variant="h5" component="div" sx={{ textTransform: 'uppercase' }} >{t(`maps.name.${selectedMap}`)}</Typography>
           <Typography variant="body2" sx={{ color: 'text.secondary' }}>
-            {t(`maps.description.${selectedMap}`)}
+            {/*t(`maps.description.${selectedMap}`)*/}
           </Typography>
         </CardContent>
       </Card>
