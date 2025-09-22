@@ -329,7 +329,7 @@ export default () => {
           height: showSettings && mainRunning ? '100%' : 0,
           width: '100%',
           backdropFilter: 'blur(10px)',
-          overflow: 'auto',
+          overflow: 'hidden',
           position: 'absolute',
           zIndex: 1000
         }}>

@@ -28,7 +28,7 @@ export default ({ instance }: Props) => {
 
   return (
     <Stack direction="row">
-      <List subheader={<ListSubheader>{t('settings.Select map')}</ListSubheader>} sx={{ minWidth: 120 }}>
+      <List subheader={<ListSubheader>{t('settings.Select map')}</ListSubheader>} sx={{ minWidth: 120, maxHeight: 400, overflow: 'auto' }}>
         {Object.keys(instance?.FS.analyzePath(`${instance?.ENV.HOME}/rodir/cstrike/maps`)?.object?.contents ?? {})
           .filter(name => name.endsWith('.bsp'))
           .sort()
