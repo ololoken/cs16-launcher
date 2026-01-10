@@ -5,10 +5,10 @@ import filesystem_stdio from './filesystem_stdio.wasm?url'
 
 import libref_webgl2 from './libref_webgl2.wasm?url'
 
-import client_emscripten_javascript from './client_emscripten_javascript.wasm?url'
-import cs_emscripten_wasm32 from './cs_emscripten_javascript.wasm?url'
+import client_emscripten_javascript from './client_emscripten_wasm32.wasm?url'
+import cs_emscripten_wasm32 from './cs_emscripten_wasm32.wasm?url'
 
-import yapb_emscripten_javascript from './yapb_emscripten_javascript.wasm?url'
+import yapb_emscripten_javascript from './yapb_emscripten_wasm32.wasm?url'
 
 import xash from './xash.js'
 
@@ -18,22 +18,22 @@ export const ModuleInstance = ({ ENV, reportDownloadProgress, canvas, onExit, ..
   let module: Module;
   return xash(module = <Module>{
     canvas,
-    preInit: [() => {
-      Object.assign(module.ENV, ENV)
-    }],
     dynamicLibraries: [
       'filesystem_stdio.wasm',
       '/xash/filesystem_stdio.wasm',
-      '/cstrike/filesystem_stdio.wasm',
+      `${ENV.HOME}/filesystem_stdio.wasm`,
 
       'libref_webgl2.wasm',
 
       'cl_dlls/client_emscripten_wasm32.wasm',
-      'dlls/cs_emscripten_wasm32.so',
+      'dlls/cs_emscripten_wasm32.wasm',
 
       'cstrike.wasm'
     ],
     preRun: [
+      () => {
+        Object.assign(module.ENV, ENV)
+      },
       () => {
         module.addRunDependency('fs-sync')
         module.FS.mkdir(`${ENV.HOME}`);
@@ -59,7 +59,7 @@ export const ModuleInstance = ({ ENV, reportDownloadProgress, canvas, onExit, ..
       if (path.endsWith('libref_webgl2.wasm')) return libref_webgl2;
 
       if (path.endsWith('client_emscripten_wasm32.wasm')) return client_emscripten_javascript;
-      if (path.endsWith('cs_emscripten_wasm32.so')) return yapb_emscripten_javascript;
+      if (path.endsWith('cs_emscripten_wasm32.wasm')) return yapb_emscripten_javascript;
 
       if (path.endsWith('cstrike.wasm')) return cs_emscripten_wasm32;
 
