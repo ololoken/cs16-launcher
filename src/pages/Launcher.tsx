@@ -19,8 +19,8 @@ import PlayerConfig from './PlayerConfig';
 import ServersList from './ServersList';
 import VolumeAndSensitivitySliders from './VolumeAndSensitivitySliders';
 import configCfg from '../assets/module/config.cfg';
-//import cstrike from '../assets/module/cstrike.zip?url';
-const cstrike = 'https://storage.yandexcloud.net/yandex-games/cs16/cstrike.zip'
+import cstrike from '../assets/module/cstrike.zip?url';
+//const cstrike = 'https://storage.yandexcloud.net/yandex-games/cs16/cstrike2.zip'
 import throwExpression from '../common/throwExpression';
 import useConfig from '../hooks/useConfig';
 import useYSDK from '../hooks/useYSDK';
@@ -37,6 +37,20 @@ import { useEffect, useRef, useState } from 'react';
 import { useTheme } from '@mui/material/styles';
 import { useTranslation} from 'react-i18next';
 import { zipInputReader } from './dataInput';
+import extras_ru from '../assets/module/extras_ru.pk3?url';
+import extras_en from '../assets/module/extras_en.pk3?url';
+import titles_enTxt from '../assets/module/titles_en.txt';
+import titles_ruTxt from '../assets/module/titles_ru.txt';
+
+const titles = {
+  en: titles_enTxt,
+  ru: titles_ruTxt,
+}
+
+const extras = {
+  en: extras_en,
+  ru: extras_ru,
+}
 
 const messages = new CircularBuffer<string>(100);
 const pingCache = new Map<number, { start: number, timeout: number }>();
@@ -72,13 +86,15 @@ export default () => {
   const [isPublicServer, setIsPublicServer] = useState(false);
   const [selectedTab, setSelectedTab] = useState(1);
 
+  const lang = sdk.environment.i18n.lang == 'ru' ? 'ru' : 'en';
+
   useEffect(() => {
     config.onChangeLocalization(sdk.environment.i18n.lang === 'ru' ? 'ru-RU' : 'en-US');
   }, [sdk.environment.i18n.lang]);
 
   useEffect(() => {
     if (!readyToRun || !instance) return;
-    instance.callMain(['-noip6', '-windowed', '-game', 'cstrike', '-ref', 'webgl2']);
+    instance.callMain(['-noip6', '-windowed', '-game', 'cstrike', '-ref', 'webgl2', '-language', lang]);
   }, [readyToRun, instance]);
 
   useEffect(() => {
@@ -143,10 +159,12 @@ export default () => {
 
     ModuleInstance({
       ENV: {
-        XASH3D_RODIR: '/cstrike/rodir',
-        XASH3D_BASEDIR: '/cstrike',
+        XASH3D_RODIR: '/cstrike2/rodir',
+        XASH3D_BASEDIR: '/cstrike2',
         XASH3D_GAMELIBPATH: 'cstrike.wasm',
-        HOME: '/cstrike',
+        HOME: '/cstrike2',
+        LANG: lang,
+        XASH3D_EXTRAS_PAK1: `/cstrike2/rodir/extras_${lang}.pk3`
       },
       canvas: canvas.current,
       reportDownloadProgress: () => {},
@@ -172,6 +190,9 @@ export default () => {
               setMainRunning(true);
               instance.executeString('scr_conspeed 1048576');
               instance.executeString('con_notifytime 0');
+              instance.executeString('hud_utf8 1');
+              instance.executeString(`yb_language ${lang}`);
+              instance.executeString(`ui_language ${lang}`);
             },
             serverInfo: (ip4: number, info: string) => {
               const [, , a, b] = instance.inetNtop4(ip4).split('.', 4).map(Number);
@@ -225,36 +246,53 @@ export default () => {
       Object.assign(window,  { instance });//debug purposes
     instance.print(t(`Looking up data in [{{path}}]`, { path: instance.ENV.HOME }));
 
-    if (!instance.FS.analyzePath(`${instance.ENV.HOME}/cstrike/userconfig.cfg`).exists) {
-      instance.FS.mkdirTree(`${instance.ENV.HOME}/cstrike`);
-      instance.FS.writeFile(`${instance.ENV.HOME}/cstrike/config.cfg`, configCfg, { encoding: 'utf8' });
-    }
+    (async () => {
 
-    if (instance.FS.analyzePath(`${instance.ENV.HOME}/rodir/cstrike`).exists) return setHasData(true);
+      if (!instance.FS.analyzePath(`${instance.ENV.HOME}/cstrike/userconfig.cfg`).exists) {
+        instance.FS.mkdirTree(`${instance.ENV.HOME}/cstrike`);
+        instance.FS.writeFile(`${instance.ENV.HOME}/cstrike/config.cfg`, configCfg, { encoding: 'utf8' });
+      }
 
-    fetch(cstrike)
-      .then(async resp => {
-        const reader = resp.body?.getReader() ?? throwExpression(`failed to fetch get cstrike.zip`);
-        let totalDataSize = Number(resp.headers.get('Content-Length'));
-        let totalDataDownloaded = 0;
-        const chunks = [];
-        while(true) {
-          const { done, value } = await reader.read();
-          if (done) break;
+      instance.FS.mkdirTree(`${instance.ENV.HOME}/rodir/cstrike/`);
+      instance.FS.writeFile(`${instance.ENV.HOME}/rodir/cstrike/titles.txt`, titles[lang], { encoding: 'utf8' });
 
-          chunks.push(value);
-          totalDataDownloaded += value.length;
-          setDownloadProgress(totalDataDownloaded/totalDataSize*100);
-        }
-        return new Blob(chunks);
-      })
-      .then(blob => zipInputReader(`${instance.ENV.HOME}/rodir`, instance, blob, (total, processed) => setUnpackProgress(processed/total*100)))
-      .then(setHasData)
-      .catch(error => {
-        instance.print(`Failed to build local data ${error.message ?? error}`);
-        console.error(error)
-      })
-      .finally(() => setDownloadProgress(0));
+      if (!instance.FS.analyzePath(`${instance.ENV.HOME}/rodir/extras_${lang}.pk3`).exists)
+        await fetch(extras[lang]).then(res => res.arrayBuffer())
+          .then(buffer => {
+            instance.FS.mkdirTree(`${instance.ENV.HOME}/rodir`);
+            instance.FS.writeFile(`${instance.ENV.HOME}/rodir/extras_${lang}.pk3`, new Uint8Array(buffer), { encoding: 'binary' });
+          })
+
+      if (instance.FS.analyzePath(`${instance.ENV.HOME}/rodir/cstrike/cstrike.wad`).exists) return setHasData(true);
+
+      //fetch(data)
+      fetch(cstrike)
+        .then(async resp => {
+          const reader = resp.body?.getReader() ?? throwExpression(`failed to fetch get cstrike.zip`);
+          let totalDataSize = Number(resp.headers.get('Content-Length'));
+          let totalDataDownloaded = 0;
+          const chunks = [];
+          while(true) {
+            const { done, value } = await reader.read();
+            if (done) break;
+
+            chunks.push(value);
+            totalDataDownloaded += value.length;
+            setDownloadProgress(totalDataDownloaded/totalDataSize*100);
+          }
+          return new Blob(chunks);
+        })
+        .then(blob => zipInputReader(`${instance.ENV.HOME}/rodir`, instance, blob, (total, processed) => setUnpackProgress(processed/total*100)))
+        .then(setHasData)
+        .catch(error => {
+          instance.print(`Failed to build local data ${error.message ?? error}`);
+          console.error(error)
+        })
+        .finally(() => setDownloadProgress(0));
+
+    })()
+
+
 
   }, [instance])
 

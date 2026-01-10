@@ -1,12 +1,15 @@
 import { Box, CircularProgress, Typography } from '@mui/material';
+import { useTranslation } from 'react-i18next';
 
 export type Props = {
   downloadProgress: number,
   unpackProgress: number
 }
 
-export default ({ downloadProgress, unpackProgress }: Props) =>
-  downloadProgress ? <Box sx={{ position: 'absolute', display: 'inline-flex', zIndex: 120, top: 'calc(100vh / 2 - 100px)', left: 'calc(100vw / 2 - 100px)' }}>
+export default ({ downloadProgress, unpackProgress }: Props) => {
+  const { t } = useTranslation();
+
+  return downloadProgress ? <Box sx={{ position: 'absolute', display: 'inline-flex', zIndex: 120, top: 'calc(100vh / 2 - 100px)', left: 'calc(100vw / 2 - 100px)' }}>
     <CircularProgress variant="indeterminate" value={downloadProgress} size={200} />
     <Box
       sx={{
@@ -32,6 +35,6 @@ export default ({ downloadProgress, unpackProgress }: Props) =>
         variant="subtitle1"
         component="div"
         sx={{ color: 'text.primary' }}
-      >{Math.round(downloadProgress) === 100 ? 'Unpacking' : 'Downloading'}</Typography>
+      >{Math.round(downloadProgress) === 100 ? t('Unpacking') : t('Downloading')}</Typography>
     </Box>
-  </Box> : '';
+  </Box> : ''};

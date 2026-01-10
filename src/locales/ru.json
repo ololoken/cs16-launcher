@@ -113,6 +113,8 @@
     "Starting wasm module...": "Запускаем модуль wasm...",
     "Looking up data in [{{path}}]": "Поиск данных в [{{path}}]",
     "No local data found... Building local cache.": "Не все данные найдены в локальном кеше, начинаю загрузку...",
-    "Local data found we are ready to start...": "Все готово к запуску игры"
+    "Local data found we are ready to start...": "Все готово к запуску игры",
+    "Unpacking": "Распаковка",
+    "Downloading": "Загрузка"
   }
 }

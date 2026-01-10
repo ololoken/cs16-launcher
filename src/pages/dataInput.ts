@@ -1,7 +1,10 @@
 import throwExpression from '../common/throwExpression';
 import { Module } from '../types/Module';
-import { BlobReader, Uint8ArrayWriter, ZipReader } from '@zip.js/zip.js';
+import { BlobReader, Uint8ArrayWriter, ZipReader, configure } from '@zip.js/zip.js';
 
+configure({
+  useWebWorkers: false
+})
 
 const filterInput = (relativePath: string) => {
   if (relativePath.endsWith('/')) return false;
