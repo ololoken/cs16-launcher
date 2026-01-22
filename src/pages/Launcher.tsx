@@ -153,90 +153,100 @@ export default () => {
   }, [isPublicServer]);
 
   useEffect(function critical () {//init wasm module instance
-    if (!canvas.current) return;
     if ((critical as any)['lock']) return;
     (critical as any)['lock'] = true;
-
-    ModuleInstance({
-      ENV: {
-        XASH3D_RODIR: '/cstrike2/rodir',
-        XASH3D_BASEDIR: '/cstrike2',
-        XASH3D_GAMELIBPATH: 'cstrike.wasm',
-        HOME: '/cstrike2',
-        LANG: lang,
-        XASH3D_EXTRAS_PAK1: `/cstrike2/rodir/extras_${lang}.pk3`
-      },
-      canvas: canvas.current,
-      reportDownloadProgress: () => {},
-      onExit: (code) => {
-        console.info('!+EXIT+!', code);
-        // add hook or iframe callback here
-      },
-      print: msg => {
-        if (import.meta.env.DEV) console.log(msg);
-        messages.push(msg)
-      },
-      printErr: msg => {
-        if (import.meta.env.DEV) console.error(msg);
-        messages.push(msg)
-      }
-    })
-      .then(instance => {
-        Object.assign(instance, {
-          callbacks: {
-            fsSyncRequired: (data: { path: string, op: 'write' | 'delete' }) => setTimeout(() => instance?.FS.syncfs(res => console.log(data, `synced`, res)), 500),
-            gameReady: async () => {
-              sdk.features.LoadingAPI.ready();
-              setMainRunning(true);
-              instance.executeString('scr_conspeed 1048576');
-              instance.executeString('con_notifytime 0');
-              instance.executeString('hud_utf8 1');
-              instance.executeString(`yb_language ${lang}`);
-              instance.executeString(`ui_language ${lang}`);
+    (async () => {
+      if (!canvas.current) return;
+      ModuleInstance({
+        ENV: {
+          XASH3D_RODIR: '/cstrike2/rodir',
+          XASH3D_BASEDIR: '/cstrike2',
+          XASH3D_GAMELIBPATH: 'cstrike.wasm',
+          HOME: '/cstrike2',
+          LANG: lang,
+          XASH3D_EXTRAS_PAK1: `/cstrike2/rodir/extras_${lang}.pk3`,
+          ...(await sdk.getFlags())
+        },
+        canvas: canvas.current,
+        reportDownloadProgress: () => {},
+        onExit: (code) => {
+          console.info('!+EXIT+!', code);
+          // add hook or iframe callback here
+        },
+        print: msg => {
+          if (import.meta.env.DEV) console.log(msg);
+          messages.push(msg)
+        },
+        printErr: msg => {
+          if (import.meta.env.DEV) console.error(msg);
+          messages.push(msg)
+        }
+      })
+        .then(instance => {
+          Object.assign(instance, {
+            callbacks: {
+              fsSyncRequired: (data: { path: string, op: 'write' | 'delete' }) => setTimeout(() => instance?.FS.syncfs(res => console.log(data, `synced`, res)), 500),
+              gameReady: async () => {
+                sdk.features.LoadingAPI.ready();
+                setMainRunning(true);
+                instance.executeString('scr_conspeed 1048576');
+                instance.executeString('con_notifytime 0');
+                instance.executeString('hud_utf8 1');
+                instance.executeString('cl_test_bandwidth 0');
+                instance.executeString(`yb_language ${lang}`);
+                instance.executeString(`ui_language ${lang}`);
+                const hasScoreboard = (await sdk.getFlags())?.DEFAULT_SETTINGS === 'yes';
+                if (hasScoreboard) {
+                  instance.executeString('bind TAB "+showscores"');
+                }
+                else {
+                  instance.executeString('unbind TAB');
+                }
+              },
+              serverInfo: (ip4: number, info: string) => {
+                const [, , a, b] = instance.inetNtop4(ip4).split('.', 4).map(Number);
+                const identity = (a << 0) | (b << 8);
+                const payload = info.split('\\').splice(1).reduce((r, item, idx) => {
+                  const ci = Math.floor(idx/2);
+                  r[ci] = [...(r[ci] ?? []), item];
+                  return r;
+                }, [] as string[][]).reduce((o, [k, v]) => ({...o, [k]: v}), {})
+                dispatch(addServer({ [identity]: {...payload, ping: Date.now() - (pingCache.get(identity)?.start ?? Date.now()) }}))
+                clearTimeout(pingCache.get(identity)?.timeout);
+              }
             },
-            serverInfo: (ip4: number, info: string) => {
-              const [, , a, b] = instance.inetNtop4(ip4).split('.', 4).map(Number);
-              const identity = (a << 0) | (b << 8);
-              const payload = info.split('\\').splice(1).reduce((r, item, idx) => {
-                const ci = Math.floor(idx/2);
-                r[ci] = [...(r[ci] ?? []), item];
-                return r;
-              }, [] as string[][]).reduce((o, [k, v]) => ({...o, [k]: v}), {})
-              dispatch(addServer({ [identity]: {...payload, ping: Date.now() - (pingCache.get(identity)?.start ?? Date.now()) }}))
-              clearTimeout(pingCache.get(identity)?.timeout);
-            }
-          },
-          executeString: instance.cwrap('Cmd_ExecuteString', 'number', ['string']),
-          getCVar: (name: string) => {
-            return instance.waitMessage(`"${name}" is`, 1000, name)
-              .then((msg: string) => {
-                const [{ groups }] = msg?.matchAll(new RegExp(`"${name}" is "(?<value>[^"]*)"`, 'gm')) ?? [{ groups: { value: '' } }];
-                 return groups?.value
-              })
-          },
-          waitMessage: (lookupMsg: string, timeout = 1000, cmd = '') => new Promise<string>((resolve, reject) => {
-            const start = Date.now();
-            const hTimer = setInterval(() => {
-              const msg = messages.find((msg, idx) => msg.includes(lookupMsg));
-              if (!msg && Date.now() - start > timeout) {
-                clearInterval(hTimer);
-                return reject('timeout');
+            executeString: instance.cwrap('Cmd_ExecuteString', 'number', ['string']),
+            getCVar: (name: string) => {
+              return instance.waitMessage(`"${name}" is`, 1000, name)
+                .then((msg: string) => {
+                  const [{ groups }] = msg?.matchAll(new RegExp(`"${name}" is "(?<value>[^"]*)"`, 'gm')) ?? [{ groups: { value: '' } }];
+                  return groups?.value
+                })
+            },
+            waitMessage: (lookupMsg: string, timeout = 1000, cmd = '') => new Promise<string>((resolve, reject) => {
+              const start = Date.now();
+              const hTimer = setInterval(() => {
+                const msg = messages.find((msg, idx) => msg.includes(lookupMsg));
+                if (!msg && Date.now() - start > timeout) {
+                  clearInterval(hTimer);
+                  return reject('timeout');
+                }
+                if (msg) {
+                  clearInterval(hTimer);
+                  return resolve(msg);
+                }
+              }, 0);
+              if (cmd) {
+                instance.executeString(cmd);
               }
-              if (msg) {
-                clearInterval(hTimer);
-                return resolve(msg);
-              }
-            }, 0);
-            if (cmd) {
-              instance.executeString(cmd);
-            }
-          })
-        });
-        setInstance(instance);
-      })
-      .catch((e: Error) => {
-        console.error(e);
-      })
+            })
+          });
+          setInstance(instance);
+        })
+        .catch((e: Error) => {
+          console.error(e);
+        })
+    })()
 
   }, [canvas])
 
@@ -423,7 +433,7 @@ export default () => {
                       <ServersList instance={instance} />
                     </Stack>
                   </TabPanel>
-                  <TabPanel value={1}>
+                  <TabPanel value={1} sx={{ transform: 'scale(min(1, calc(100vh / 768px)))', transformOrigin: 'top center', minWidth: '410px' }}>
                     <Stack direction="column" spacing={2} alignItems="center" sx={{ overflow: 'hidden' }}>
                       <Stack direction="row" spacing={2}>
                         <MapConfig instance={instance} />

@@ -1,7 +1,7 @@
 import { WebSocketServer, RawData, WebSocket } from 'ws';
 
 export type Payload =
-  { 'init': { id: number } }
+  { 'init': { id: number, iceServers: any } }
   | { 'pc:ice-candidate': { candidate: RTCIceCandidateInit, from: number, to: number } }
   | { 'pc:offer': { description: RTCSessionDescription, from: number, to: number } }
   | { 'pc:answer': { description: RTCSessionDescription, from: number, to: number } }
@@ -83,7 +83,10 @@ wss.on('connection', (ws, req) => {
     }
   });
 
-  ws.send(JSON.stringify({ init: { id } }));
+  fetch('https://speed.cloudflare.com/turn-creds')
+    .then(res => res.json())
+    .then(iceServers => ws.send(JSON.stringify({ init: { id, iceServers } })))
+    .catch(() => ws.send(JSON.stringify({ init: { id } })));
 });
 
 process.on('uncaughtException', error  => {

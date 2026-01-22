@@ -39,7 +39,8 @@
         "de_inferno.bsp": "DE: Inferno",
         "de_dust2.bsp": "DE: Dust 2",
         "de_cbble.bsp": "DE: Cobblestone",
-        "de_aztec.bsp": "DE: Aztec"
+        "de_aztec.bsp": "DE: Aztec",
+        "de_mirage.bsp": "DE: Mirage"
       },
       "description": {
         "fy_snow.bsp": "FY: Snow",
@@ -52,7 +53,8 @@
         "de_inferno.bsp": "DE: Inferno",
         "de_dust2.bsp": "DE: Dust 2",
         "de_cbble.bsp": "DE: Cobblestone",
-        "de_aztec.bsp": "DE: Aztec"
+        "de_aztec.bsp": "DE: Aztec",
+        "de_mirage.bsp": "DE: Mirage"
       }
     },
     "models": {

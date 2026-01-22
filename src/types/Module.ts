@@ -111,7 +111,8 @@ export type Module = {
   HEAP32: Int32Array
   HEAPU32: Uint32Array
 
-  _maloc: (size: number) => number;
+  _malloc: (size: number) => number;
+  _free: (ptr: number) => void;
 
   ccal: (exportName: string, exportReturn: 'number' | 'string', argTypes: ('number' | 'string')[], args: (number | string)[]) => number | string
 

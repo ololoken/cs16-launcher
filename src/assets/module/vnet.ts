@@ -3,6 +3,7 @@ import iceServers from './iceServers';
 import { Payload } from '../../../server';
 
 let hostId: number;
+let cloudflareIce: any;
 let _fdescriptor = 100;
 
 const peers = new Map<string, RTCPeerConnection>();
@@ -14,12 +15,14 @@ const send_queue: Map<string,  Array<ArrayBuffer>> = new Map();
 const recv_queue: Array<{ addr: SockAddr, data: ArrayBuffer }>  = [];
 
 export default (h: Module) => {
-  const master = new WebSocket(import. meta.env.PROD ? 'https://turch.in/cs' : `//${location.hostname}:4991`);
+  const master = new WebSocket(import.meta.env.PROD
+    ? 'https://turch.in/cs'
+    : `//${location.hostname}:4991`);
 
 
   const connectToServer = (remoteId: number, addr: SockAddr, key: string, callback?: (err?: string) => void) => {
     const peer = `${addr.addr}:${addr.port}`;
-    const pc = new RTCPeerConnection({ iceServers });
+    const pc = new RTCPeerConnection({ iceServers: cloudflareIce ? [cloudflareIce, ...iceServers] : iceServers });
 
     const dc = pc.createDataChannel(peer, { maxRetransmits: 0, ordered: false });
 
@@ -200,6 +203,7 @@ export default (h: Module) => {
           switch (true) {
             case 'init' in payload: {//assign client id
               hostId = payload.init.id;
+              cloudflareIce = payload.init.iceServers;
               console.log(data);
               resolve();
             } break;
@@ -211,7 +215,7 @@ export default (h: Module) => {
             } break;
             case 'pc:offer' in payload: {
               const { description, from, to } = payload['pc:offer'];
-              const pc = new RTCPeerConnection({ iceServers });
+              const pc = new RTCPeerConnection({ iceServers: cloudflareIce ? [cloudflareIce, ...iceServers] : iceServers });
               peers.set(`${to}:${from}`, pc);
               pc.setRemoteDescription(description)
                 .then(() => pc.createAnswer())
